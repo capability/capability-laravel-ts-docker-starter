@@ -1,0 +1,135 @@
+name: CI (full)
+
+on:
+  pull_request:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 3 * * *' # nightly
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend:
+    name: Backend (lint+static+tests+coverage)
+    runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_DATABASE: app_db
+          MYSQL_USER: app_user
+          MYSQL_PASSWORD: app_pass
+          MYSQL_ROOT_PASSWORD: root
+        ports: [ '3306:3306' ]
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -uapp_user -papp_pass"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+      redis:
+        image: redis:7-alpine
+        ports: [ '6379:6379' ]
+        options: --health-cmd="redis-cli ping" --health-interval=10s --health-timeout=3s --health-retries=10
+
+    env:
+      DB_CONNECTION: mysql
+      DB_HOST: 127.0.0.1
+      DB_PORT: 3306
+      DB_DATABASE: app_db
+      DB_USERNAME: app_user
+      DB_PASSWORD: app_pass
+      CACHE_DRIVER: redis
+      REDIS_HOST: 127.0.0.1
+      REDIS_PORT: 6379
+      QUEUE_CONNECTION: sync
+      APP_ENV: testing
+      APP_KEY: base64:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
+
+    defaults:
+      run:
+        working-directory: apps/backend
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          tools: composer
+          coverage: pcov
+
+      - name: Cache composer
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/composer
+          key: composer-${{ runner.os }}-${{ hashFiles('apps/backend/composer.lock') }}
+          restore-keys: composer-${{ runner.os }}-
+
+      - name: Install deps (dev)
+        run: composer install --no-interaction --prefer-dist --no-progress
+
+      - name: Generate app key (if not set)
+        run: php -r "echo env('APP_KEY') ? 'ok' : exit(1);"
+
+      - name: Migrate
+        run: php artisan migrate --force
+
+      - name: Pint
+        run: ./vendor/bin/pint --test
+
+      - name: PHPStan (max level)
+        run: ./vendor/bin/phpstan --no-progress
+
+      - name: Pest (coverage)
+        run: ./vendor/bin/pest --coverage-clover coverage.xml --colors=always
+
+      - name: Upload coverage (artifact)
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-coverage
+          path: apps/backend/coverage.xml
+
+  frontend:
+    name: Frontend (lint+unit+coverage+build)
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Enable corepack & pnpm
+        run: |
+          corepack enable
+          corepack prepare pnpm@10.15.1 --activate
+
+      - name: Cache pnpm store
+        uses: actions/cache@v4
+        with:
+          path: ~/.local/share/pnpm/store
+          key: pnpm-${{ runner.os }}-${{ hashFiles('apps/frontend/pnpm-lock.yaml') }}
+          restore-keys: pnpm-${{ runner.os }}-
+
+      - name: Install deps
+        run: pnpm -C apps/frontend install --frozen-lockfile
+
+      - name: Lint
+        run: pnpm -C apps/frontend lint
+
+      - name: Test (coverage)
+        run: pnpm -C apps/frontend test --coverage --run
+
+      - name: Build
+        run: pnpm -C apps/frontend build
+
+      - name: Upload frontend coverage (if produced)
+        if: hashFiles('apps/frontend/coverage/**') != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-coverage
+          path: apps/frontend/coverage
+

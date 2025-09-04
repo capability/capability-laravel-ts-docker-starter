@@ -1,0 +1,82 @@
+name: CI (robust)
+
+on:
+  pull_request:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend:
+    name: Backend (lint+static+tests)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/backend
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          tools: composer
+          coverage: none
+
+      - name: Cache composer
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/composer
+          key: composer-${{ runner.os }}-${{ hashFiles('apps/backend/composer.lock') }}
+          restore-keys: composer-${{ runner.os }}-
+
+      - name: Install deps (no dev optimized)
+        run: composer install --no-interaction --prefer-dist --no-progress
+
+      - name: Pint (lint)
+        run: ./vendor/bin/pint --test
+
+      - name: PHPStan
+        run: ./vendor/bin/phpstan --no-progress
+
+      - name: Pest (unit only, no coverage)
+        run: ./vendor/bin/pest --colors=always
+
+  frontend:
+    name: Frontend (lint+unit+build)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Enable corepack & pnpm
+        run: |
+          corepack enable
+          corepack prepare pnpm@10.15.1 --activate
+          pnpm -v
+
+      - name: Cache pnpm store
+        uses: actions/cache@v4
+        with:
+          path: ~/.local/share/pnpm/store
+          key: pnpm-${{ runner.os }}-${{ hashFiles('apps/frontend/pnpm-lock.yaml') }}
+          restore-keys: pnpm-${{ runner.os }}-
+
+      - name: Install deps
+        run: pnpm -C apps/frontend install --frozen-lockfile
+
+      - name: Lint
+        run: pnpm -C apps/frontend lint
+
+      - name: Test
+        run: pnpm -C apps/frontend test --run
+
+      - name: Build
+        run: pnpm -C apps/frontend build
+

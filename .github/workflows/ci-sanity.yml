@@ -1,0 +1,51 @@
+name: CI (sanity)
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  sanity:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # Backend: Composer metadata only
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          tools: composer
+          coverage: none
+
+      - name: Composer validate
+        working-directory: apps/backend
+        run: composer validate --ansi
+
+      # Frontend: install only
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Enable corepack & pnpm
+        run: |
+          corepack enable
+          corepack prepare pnpm@10.15.1 --activate
+          pnpm -v
+
+      - name: pnpm install
+        run: pnpm -C apps/frontend install --frozen-lockfile
+
+      # Repo hygiene checks
+      - name: Required files exist
+        run: |
+          test -f README.md
+          test -f LICENSE
+          test -f .env.example
+          test -f apps/backend/.env.example
+          test -f apps/frontend/.env.example
