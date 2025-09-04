@@ -33,6 +33,41 @@ pnpm -C apps/frontend dev
 * Keep lockfiles committed (`composer.lock`, `pnpm-lock.yaml`).
 * Prefer squash merges into `main`.
 
+## Prefered Conventional Commit Types (for this skeleton)
+
+* **`feat:`** – new feature (backend, frontend, infra)
+  *Example: `feat: add health check endpoint`*
+
+* **`fix:`** – bug fix (logic, config, code)
+  *Example: `fix: wrong Redis port in .env.example`*
+
+* **`docs:`** – documentation only (README, guides, comments)
+  *Example: `docs: correct onboarding link in README.md`*
+
+* **`style:`** – formatting, whitespace, missing semicolons (no code change)
+  *Example: `style: apply Pint auto-fixes`*
+
+* **`refactor:`** – code change that neither fixes a bug nor adds a feature
+  *Example: `refactor: extract common Docker healthcheck command`*
+
+* **`perf:`** – performance improvement
+  *Example: `perf: enable opcache in production Dockerfile`*
+
+* **`test:`** – add or update tests
+  *Example: `test: add Pest feature test for healthz endpoint`*
+
+* **`build:`** – changes to build system, CI/CD, deps, or tooling
+  *Example: `build: update phpstan to v2.0`*
+
+* **`ci:`** – changes to CI config (GitHub Actions, workflows)
+  *Example: `ci: fix full-ci APP_KEY quoting`*
+
+* **`chore:`** – housekeeping (bump lockfile, ignore files, renames)
+  *Example: `chore: remove stray .DS_Store`*
+
+* **`revert:`** – revert a previous commit
+  *Example: `revert: feat: add experimental tracing profile`*
+
 ## Quality gates
 
 Run these before submitting a PR:
