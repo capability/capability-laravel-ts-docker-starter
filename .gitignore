@@ -24,8 +24,8 @@ docker-compose.override.yml
 # --- Caddy --------------------------------------------------------------------
 
 # Local certs (mkcert, self-signed)
-infra/caddy/certs/*.pem
-infra/caddy/certs/*-key.pem
+infra/ssl/certs/*.pem
+infra/ssl/certs/*-key.pem
 caddy_data/
 caddy_config/
 
