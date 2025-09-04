@@ -11,7 +11,7 @@ You *can* fork it if you want to build a better skeleton or adapt it into your o
 [![CI](https://github.com/your-handle/capability-laravel-ts-docker-starter/actions/workflows/ci.yml/badge.svg)](https://github.com/your-handle/capability-laravel-ts-docker-starter/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![Docker](https://img.shields.io/badge/docker-ready-blue.svg)](https://www.docker.com/)
-[![Laravel](https://img.shields.io/badge/laravel-11-red.svg)](https://laravel.com/)
+[![Laravel](https://img.shields.io/badge/laravel-12-red.svg)](https://laravel.com/)
 [![Node.js](https://img.shields.io/badge/node-22.x-6DA55F.svg)](https://nodejs.org/)
 [![pnpm](https://img.shields.io/badge/pnpm-10.15.1-orange.svg)](https://pnpm.io/)
 [![TypeScript](https://img.shields.io/badge/typescript-5.x-blue.svg)](https://www.typescriptlang.org/)
