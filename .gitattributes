@@ -1,0 +1,32 @@
+# Auto-detect text files and ensure LF line endings
+* text=auto eol=lf
+
+# Common file types
+*.sh      text eol=lf
+*.yml     text eol=lf
+*.yaml    text eol=lf
+*.json    text eol=lf
+*.md      text eol=lf
+*.env     text eol=lf
+Justfile  text eol=lf
+
+# Treat binary as-is
+*.png     binary
+*.jpg     binary
+*.jpeg    binary
+*.gif     binary
+*.ico     binary
+*.pdf     binary
+*.ttf     binary
+*.woff*   binary
+
+# GitHub Linguist: exclude generated/vendor code from language stats
+apps/backend/public/** linguist-vendored
+apps/backend/storage/** linguist-vendored
+apps/backend/vendor/** linguist-vendored
+apps/frontend/dist/**  linguist-vendored
+apps/frontend/node_modules/** linguist-vendored
+
+# Docs are documentation, not code
+docs/** linguist-documentation
+

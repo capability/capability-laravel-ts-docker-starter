@@ -1,0 +1,15 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["config:base"],
+  "labels": ["deps", "auto"],
+  "schedule": ["at any time"],
+  "prHourlyLimit": 6,
+  "rangeStrategy": "pin",
+  "rebaseWhen": "behind-base-branch",
+  "dependencyDashboard": false,
+  "packageRules": [
+    { "matchDepTypes": ["devDependencies"], "automerge": true, "automergeType": "branch" },
+    { "matchUpdateTypes": ["patch", "minor"], "groupName": "all-minor-and-patch" },
+    { "matchManagers": ["npm"], "enabled": true }
+  ]
+}

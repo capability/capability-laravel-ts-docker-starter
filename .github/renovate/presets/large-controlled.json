@@ -1,0 +1,17 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["config:base"],
+  "labels": ["deps", "controlled"],
+  "schedule": ["before 7am on first day of month"],
+  "prHourlyLimit": 2,
+  "prConcurrentLimit": 5,
+  "rangeStrategy": "pin",
+  "dependencyDashboard": true,
+  "stabilityDays": 3,
+  "requireConfig": "ignored",
+  "packageRules": [
+    { "matchDepTypes": ["dependencies", "devDependencies"], "automerge": false },
+    { "matchUpdateTypes": ["major"], "groupName": "major rollups" },
+    { "matchManagers": ["npm"], "enabled": true }
+  ]
+}

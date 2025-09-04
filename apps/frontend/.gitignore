@@ -1,0 +1,11 @@
+# builds
+dist/
+# deps
+node_modules/
+# logs
+npm-debug.log*
+pnpm-debug.log*
+# editor
+.DS_Store
+.idea/
+.vscode/

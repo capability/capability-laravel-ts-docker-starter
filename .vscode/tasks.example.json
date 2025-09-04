@@ -1,0 +1,10 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    { "label": "FE: dev", "type": "shell", "command": "pnpm --dir apps/frontend dev", "isBackground": true, "problemMatcher": [] },
+    { "label": "FE: test", "type": "shell", "command": "pnpm --dir apps/frontend test" },
+    { "label": "FE: build", "type": "shell", "command": "pnpm --dir apps/frontend build" },
+    { "label": "BE: test", "type": "shell", "command": "php -d xdebug.mode=off -d memory_limit=1G -r 'chdir(\"apps/backend\"); passthru(\"php artisan test\");'" },
+    { "label": "Lint all", "type": "shell", "command": "pnpm --dir apps/frontend lint && vendor/bin/pint --test || true" }
+  ]
+}

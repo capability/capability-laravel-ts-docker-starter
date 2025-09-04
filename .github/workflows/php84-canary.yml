@@ -1,0 +1,25 @@
+name: php84-canary
+on:
+  schedule: [{ cron: "0 3 * * 1" }]   # Mondays 03:00 UTC
+  workflow_dispatch:
+
+jobs:
+  backend-84:
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          coverage: pcov
+          tools: composer
+          extensions: mbstring, intl, pdo_mysql, gd, zip
+      - run: composer install --no-interaction --prefer-dist --no-progress
+        working-directory: apps/backend
+      - run: composer lint
+        working-directory: apps/backend
+      - run: composer stan
+        working-directory: apps/backend
+      - run: composer run "test:cov"
+        working-directory: apps/backend

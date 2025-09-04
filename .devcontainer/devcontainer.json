@@ -1,0 +1,65 @@
+{
+  "name": "app-skeleton (backend+frontend)",
+  "dockerComposeFile": [
+    "../docker-compose.yml",
+    "../docker-compose.dev.yml",
+    "./docker-compose.devcontainer.yml"
+  ],
+  "service": "api",
+  "workspaceFolder": "/workspace",
+
+  "features": {
+    "ghcr.io/devcontainers/features/node:1": {
+      "version": "22",
+      "installYarn": false
+    },
+    "ghcr.io/devcontainers/features/docker-outside-of-docker:1": {}
+  },
+  "mounts": [
+    "source=/var/run/docker.sock,target=/var/run/docker.sock,type=bind"
+  ],
+  "customizations": {
+    "vscode": {
+      "settings": {
+        "editor.formatOnSave": true,
+        "php.validate.executablePath": "/usr/local/bin/php",
+        "intelephense.files.exclude": [
+          "**/vendor/**",
+          "**/node_modules/**",
+          "**/.git/**"
+        ],
+        "intelephense.files.maxMemory": 4096,
+        "eslint.experimental.useFlatConfig": true,
+        "typescript.tsdk": "apps/frontend/node_modules/typescript/lib",
+        "files.trimTrailingWhitespace": true,
+        "files.insertFinalNewline": true,
+        "terminal.integrated.fontFamily": "MesloLGS NF"
+      },
+      "extensions": [
+        "bmewburn.vscode-intelephense-client",
+        "xdebug.php-pack",
+        "onecentlin.laravel-blade",
+        "ryannaddy.laravel-artisan",
+        "ms-azuretools.vscode-docker",
+        "dbaeumer.vscode-eslint",
+        "esbenp.prettier-vscode",
+        "vitest.explorer"
+      ]
+    }
+  },
+
+  "containerEnv": {
+    "COMPOSER_ALLOW_SUPERUSER": "1"
+  },
+
+  "forwardPorts": [5173, 8080, 8025],
+
+  "postCreateCommand": [
+    "set -e; if [ -f apps/backend/composer.json ]; then cd apps/backend && composer install && cd -; fi",
+    "corepack enable && corepack prepare pnpm@10.15.1 --activate",
+    "set -e; if [ -f apps/frontend/pnpm-lock.yaml ]; then cd apps/frontend && pnpm install --frozen-lockfile && cd -; fi"
+  ],
+
+  "remoteUser": "app",
+  "runArgs": ["--init"]
+}

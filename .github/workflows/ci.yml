@@ -1,0 +1,195 @@
+name: CI
+
+on:
+  workflow_dispatch: {}
+  #push:
+  #  branches: [ main ]
+  #pull_request:
+  #  branches: [ main ]
+
+permissions:
+  contents: read
+
+# Toggle here or via repo variable: Settings → Secrets and variables → Variables
+env:
+  USE_MYSQL: "false" # set to "true" to run the MySQL backend job
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # -------------------------
+  # Backend on SQLite (default)
+  # -------------------------
+  backend-sqlite:
+    name: Backend (Laravel, SQLite)
+    if: ${{ env.USE_MYSQL != 'true' && hashFiles('apps/backend/composer.json') != '' && hashFiles('apps/backend/composer.lock') != '' }}
+    runs-on: ubuntu-24.04
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          coverage: pcov
+          tools: composer
+
+      - name: Cache Composer
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.composer/cache/files
+            apps/backend/vendor
+          key: composer-${{ runner.os }}-${{ hashFiles('apps/backend/composer.lock') }}
+          restore-keys: |
+            composer-${{ runner.os }}-
+
+      - name: Install backend deps
+        working-directory: apps/backend
+        run: composer install --no-interaction --no-progress --prefer-dist
+
+      - name: App key and caches
+        working-directory: apps/backend
+        run: |
+          php -r "file_exists('.env') || copy('.env.example','.env');"
+          php artisan key:generate --force
+          php artisan config:cache
+          php artisan route:cache
+
+      - name: Run backend tests (SQLite in-memory)
+        working-directory: apps/backend
+        run: php artisan test --coverage-clover=coverage.xml
+
+      - name: Upload backend coverage
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-coverage-sqlite
+          path: apps/backend/coverage.xml
+
+  # -------------------------
+  # Backend on MySQL (opt-in)
+  # -------------------------
+  backend-mysql:
+    name: Backend (Laravel, MySQL)
+    if: ${{ env.USE_MYSQL == 'true' && hashFiles('apps/backend/composer.json') != '' && hashFiles('apps/backend/composer.lock') != '' }}
+    runs-on: ubuntu-24.04
+
+    services:
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_DATABASE: laravel
+          MYSQL_USER: laravel
+          MYSQL_PASSWORD: secret
+          MYSQL_ROOT_PASSWORD: secret
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h localhost"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          coverage: pcov
+          tools: composer
+
+      - name: Cache Composer
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.composer/cache/files
+            apps/backend/vendor
+          key: composer-${{ runner.os }}-${{ hashFiles('apps/backend/composer.lock') }}
+          restore-keys: |
+            composer-${{ runner.os }}-
+
+      - name: Install backend deps
+        working-directory: apps/backend
+        run: composer install --no-interaction --no-progress --prefer-dist
+
+      - name: App key and caches
+        working-directory: apps/backend
+        run: |
+          php -r "file_exists('.env') || copy('.env.example','.env');"
+          php artisan key:generate --force
+          php artisan config:cache
+          php artisan route:cache
+
+      - name: Run backend tests (MySQL service)
+        working-directory: apps/backend
+        env:
+          DB_CONNECTION: mysql
+          DB_HOST: 127.0.0.1
+          DB_PORT: 3306
+          DB_DATABASE: laravel
+          DB_USERNAME: laravel
+          DB_PASSWORD: secret
+        run: php artisan test --coverage-clover=coverage.xml
+
+      - name: Upload backend coverage
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-coverage-mysql
+          path: apps/backend/coverage.xml
+
+  # -------------------------
+  # Frontend (Vite + TS)
+  # -------------------------
+  frontend:
+    name: Frontend (Vite + TS)
+    if: ${{ hashFiles('apps/frontend/package.json') != '' && hashFiles('apps/frontend/pnpm-lock.yaml') != '' }}
+    runs-on: ubuntu-24.04
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22.19.0'
+          cache: 'pnpm'
+          cache-dependency-path: apps/frontend/pnpm-lock.yaml
+
+      - name: Enable Corepack and pin pnpm
+        run: |
+          corepack enable
+          corepack prepare pnpm@10.15.1 --activate
+          pnpm -v
+          node -v
+
+      - name: Install frontend deps
+        working-directory: apps/frontend
+        run: pnpm install --frozen-lockfile
+
+      - name: Lint
+        working-directory: apps/frontend
+        run: pnpm lint
+
+      - name: Typecheck
+        working-directory: apps/frontend
+        run: pnpm typecheck
+
+      - name: Test
+        working-directory: apps/frontend
+        run: pnpm test -- --coverage
+
+      - name: Build
+        working-directory: apps/frontend
+        run: pnpm build
+
+      - name: Upload frontend dist
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-dist
+          path: apps/frontend/dist
+

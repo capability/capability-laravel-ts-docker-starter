@@ -1,0 +1,33 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Frontend: Vite (5173)",
+      "type": "pwa-node",
+      "request": "launch",
+      "cwd": "${workspaceFolder}/apps/frontend",
+      "program": "${workspaceFolder}/apps/frontend/node_modules/vite/bin/vite.js",
+      "args": ["--port", "5173", "--host"],
+      "console": "integratedTerminal",
+      "autoAttachChildProcesses": true
+    },
+    {
+      "name": "Backend: PHP (Xdebug)",
+      "type": "php",
+      "request": "launch",
+      "port": 9003,
+      "pathMappings": {
+        "/var/www/html": "${workspaceFolder}/apps/backend",
+        "/workspace/apps/backend": "${workspaceFolder}/apps/backend"
+      },
+      "ignore": ["**/vendor/**", "**/storage/**", "**/bootstrap/cache/**"]
+    }
+  ],
+  "compounds": [
+    {
+      "name": "Dev: FE server + PHP debug",
+      "configurations": ["Frontend: Vite (5173)", "Backend: PHP (Xdebug)"]
+    }
+  ]
+}
+

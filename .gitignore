@@ -1,0 +1,134 @@
+# --- OS / Editors -------------------------------------------------------------
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*.orig
+*.rej
+.idea/
+.fleet/
+.history/
+.direnv/
+.envrc
+
+.vscode/settings.json
+.vscode/launch.json
+.vscode/tasks.json
+
+# --- Docker / Compose ---------------------------------------------------------
+.env
+.env.*
+docker-compose.*.local.yml
+docker-compose.override.yml
+
+# --- Caddy --------------------------------------------------------------------
+
+# Local certs (mkcert, self-signed)
+infra/caddy/certs/*.pem
+infra/caddy/certs/*-key.pem
+caddy_data/
+caddy_config/
+
+# --- Devcontainer -------------------------------------------------------------
+# keep devcontainer config in git; ignore local caches if any
+.devcontainer/**/.cache/
+
+# --- GitHub Actions / CI artifacts -------------------------------------------
+*.coverage
+*.lcov
+coverage/
+**/coverage.xml
+
+# =============================================================================
+# Backend: Laravel (apps/backend)
+# =============================================================================
+
+# Composer
+apps/backend/vendor/
+# keep lockfile
+!apps/backend/composer.lock
+
+# Environment
+apps/backend/.env
+apps/backend/.env.*
+apps/backend/.php-cs-fixer.cache
+apps/backend/.phpunit.result.cache
+apps/backend/.phpunit.cache/
+apps/backend/.phpstan.cache/
+
+# Storage (track only placeholder)
+apps/backend/storage/*
+!apps/backend/storage/.gitignore
+
+# Compiled cache
+apps/backend/bootstrap/cache/*
+!apps/backend/bootstrap/cache/.gitignore
+
+# Uploaded/public symlink target
+apps/backend/public/storage/
+
+# SQLite dev DBs
+apps/backend/database/*.sqlite
+
+# Composer bin plugin vendors (keep their locks/json)
+apps/backend/vendor-bin/**/vendor/
+
+# Test & coverage outputs (if generated here)
+apps/backend/coverage/
+apps/backend/coverage.xml
+
+# =============================================================================
+# Frontend: Vite/TS + pnpm (apps/frontend)
+# =============================================================================
+
+# Node
+apps/frontend/node_modules/
+# keep lockfile
+!apps/frontend/pnpm-lock.yaml
+
+# Vite build
+apps/frontend/dist/
+apps/frontend/.vite/
+
+# Vitest cache & coverage
+apps/frontend/.vitest/
+apps/frontend/coverage/
+
+# Tooling caches
+apps/frontend/.eslintcache
+apps/frontend/.tsbuildinfo
+apps/frontend/.tsbuildinfo.*
+apps/frontend/npm-debug.log*
+apps/frontend/pnpm-debug.log*
+apps/frontend/yarn-error.log*
+
+# Env files for FE
+apps/frontend/.env
+apps/frontend/.env.*
+
+# If a local store ever lands in-tree by mistake
+apps/frontend/.pnpm-store/
+
+# =============================================================================
+# Repo-level tools
+# =============================================================================
+
+# Prettier, ESLint, etc. caches (if created at root)
+.eslintcache
+*.tsbuildinfo
+
+# Renovate local cache (not typical, but safe)
+renovate-cache/
+
+# Lock in pnpm config files if you create them at root; otherwise ignore local junk
+pnpm-debug.log*
+npm-debug.log*
+
+# DB dumps
+*.sql
+*.sql.gz
+
+# --- Keep template envs committed ---
+!.env.example
+apps/backend/!.env.example
+apps/frontend/!.env.example

@@ -1,0 +1,12 @@
+{
+  "editor.formatOnSave": true,
+  "editor.defaultFormatter": "esbenp.prettier-vscode",
+  "eslint.validate": ["javascript", "typescript"],
+  "typescript.tsdk": "apps/frontend/node_modules/typescript/lib",
+  "files.exclude": {
+    "**/node_modules": true,
+    "**/vendor": true,
+    "**/dist": true
+  },
+  "php.validate.executablePath": "/usr/local/bin/php"
+}
