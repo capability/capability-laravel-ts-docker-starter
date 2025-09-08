@@ -12,7 +12,7 @@ Template: [`.env.example`](../.env.example)
 
 Key variables:
 - `COMPOSE_PROFILES` → which optional profiles to enable (`ssl`, `ui`, `monitoring`, …).  
-- `DOMAIN` → hostname for SSL (e.g. `app-skeleton.test` or `your.domain.com`).  
+- `DOMAIN` → hostname for SSL (e.g. `${DOMAIN}` or `your.domain.com`).  
 - `WEB_PORT`, `DB_PORT_HOST`, `REDIS_PORT_HOST`, `UI_PORT` → host-exposed ports.  
 - `MYSQL_*` → database user, password, and root password (container bootstrap).  
 - `MAIL_FROM_*` → default sender identity for Mailpit in dev.
@@ -29,7 +29,7 @@ Template: [`apps/backend/.env.example`](../apps/backend/.env.example)
 
 Key variables:
 - `APP_NAME`, `APP_ENV`, `APP_KEY`, `APP_DEBUG`  
-- `APP_URL` → must match your public URL (e.g. `https://app-skeleton.test`).  
+- `APP_URL` → must match your public URL (e.g. `https://${DOMAIN}`).  
 - `LOG_CHANNEL`, `LOG_LEVEL`  
 - `DB_*` → Laravel’s connection settings (map to the `db` service).  
 - `REDIS_*` → Redis connection (map to the `cache` service).  

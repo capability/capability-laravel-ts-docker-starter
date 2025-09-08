@@ -3,26 +3,65 @@
 # ============================================================================
 set shell := ["bash", "-euo", "pipefail", "-c"]
 
-# Detect if we're inside a container (devcontainer or service)
+PROJECT_SLUG := env_var("PROJECT_SLUG", "app-skeleton")
+DOMAIN := env_var("DOMAIN", "app-skeleton.test")
+
+# Detect if we are inside a container (devcontainer or service)
 _in_container := `test -f /.dockerenv && echo 1 || echo 0`
 
-# Docker Compose + services
-compose   := "docker compose"
-api_svc   := "api"
-fe_svc    := "frontend"
+# Docker Compose + common service names
+compose     := "docker compose"
+api_svc     := "api"
+web_svc     := "web"
+db_svc      := "db"
+cache_svc   := "cache"
+mail_svc    := "mail"
+fe_svc      := "frontend"
+horizon_svc := "horizon"
+caddy_svc   := "caddy"
+prom_svc    := "prometheus"
+graf_svc    := "grafana"
+loki_svc    := "loki"
+otel_svc    := "otel-collector"
+prism_svc   := "prism"
 
 # Backend working dir (devcontainer: /workspace/apps/backend, service: /var/www/html)
 backend_cd := 'B=/workspace/apps/backend; [ -d "$B" ] || B=/var/www/html; cd "$B"'
 
-# Frontend working dir (inside the frontend container)
+# Frontend working dir inside the frontend container
 fe_dir := "/usr/src/app"
 
-# Guard: some recipes must run on the host (api devcontainer typically lacks Docker CLI)
+# Guard: some recipes must run on the host
 ensure_host := '''
 if [ "{{_in_container}}" = "1" ]; then
   echo "Run this from the host (not inside the container/devcontainer)."; exit 1;
 fi
 '''
+
+# ----------------------------------------------------------------------------
+# Quick starts at the very top
+# ----------------------------------------------------------------------------
+# Spin up backend with SSL: web, api, db, cache, mail, caddy
+quick-up-backend-ssl:
+    @{{ensure_host}}
+    {{compose}} --profile ssl up -d {{db_svc}} {{cache_svc}} {{mail_svc}} {{api_svc}} {{web_svc}} {{caddy_svc}}
+    {{compose}} ps
+    echo "Backend + SSL up. Try: curl -I https://{{DOMAIN}} --resolve {{DOMAIN}}:443:127.0.0.1 -k"
+
+# Spin up frontend with SSL: frontend, caddy
+quick-up-frontend-ssl:
+    @{{ensure_host}}
+    {{compose}} --profile ssl up -d {{fe_svc}} {{caddy_svc}}
+    {{compose}} ps {{fe_svc}} {{caddy_svc}}
+    echo "Frontend + SSL up. If Caddy proxies FE, hit your HTTPS domain. Otherwise: curl -i http://localhost:5173/"
+
+# Bring everything down for this project
+quick-down-all:
+    @{{ensure_host}}
+    {{compose}} -p {{PROJECT_SLUG}} down -v --remove-orphans || true
+    docker rm -f $$(docker ps -aq -f name={{PROJECT_SLUG}}_) 2>/dev/null || true
+    docker network rm {{PROJECT_SLUG}}_default 2>/dev/null || true
+    echo "All containers, volumes and the default network removed for this project"
 
 # ----------------------------------------------------------------------------
 # Utility
@@ -39,7 +78,7 @@ sh:
 
 up:
     @{{ensure_host}}
-    {{compose}} up -d db cache mail {{api_svc}} web
+    {{compose}} up -d {{db_svc}} {{cache_svc}} {{mail_svc}} {{api_svc}} {{web_svc}}
     {{compose}} ps
 
 down:
@@ -54,82 +93,50 @@ restart:
     @{{ensure_host}}
     {{compose}} up -d --force-recreate
 
-logs svc='':
+logs svc='api':
     @{{ensure_host}}
-    {{compose}} logs -f --tail=200 {{api_svc}}
+    {{compose}} logs -f --tail=200 {{svc}}
 
 # ----------------------------------------------------------------------------
 # Backend (Laravel)
 # ----------------------------------------------------------------------------
-install:
+run-backend cmd:
     @if [ "{{_in_container}}" = "1" ]; then \
-      {{backend_cd}} && composer install --no-interaction; \
+      {{backend_cd}} && {{cmd}}; \
     else \
-      {{compose}} exec -T -u app {{api_svc}} bash -lc '{{backend_cd}} && composer install --no-interaction'; \
+      {{compose}} exec -T -u app {{api_svc}} bash -lc '{{backend_cd}} && {{cmd}}'; \
     fi
+
+install:
+    @just run-backend 'composer install --no-interaction'
 
 test:
-    @if [ "{{_in_container}}" = "1" ]; then \
-      {{backend_cd}} && composer test; \
-    else \
-      {{compose}} exec -T -u app {{api_svc}} bash -lc '{{backend_cd}} && composer test'; \
-    fi
+    @just run-backend 'composer test'
 
 test-cov:
-    @if [ "{{_in_container}}" = "1" ]; then \
-      {{backend_cd}} && (composer run -q test:cov || php artisan test --coverage --min=0); \
-    else \
-      {{compose}} exec -T -u app {{api_svc}} bash -lc '{{backend_cd}} && (composer run -q test:cov || php artisan test --coverage --min=0)'; \
-    fi
+    @just run-backend '(composer run -q test:cov || php artisan test --coverage --min=0)'
 
 lint:
-    @if [ "{{_in_container}}" = "1" ]; then \
-      {{backend_cd}} && composer lint; \
-    else \
-      {{compose}} exec -T -u app {{api_svc}} bash -lc '{{backend_cd}} && composer lint'; \
-    fi
+    @just run-backend 'composer lint'
 
 lint-fix:
-    @if [ "{{_in_container}}" = "1" ]; then \
-      {{backend_cd}} && composer lint:fix; \
-    else \
-      {{compose}} exec -T -u app {{api_svc}} bash -lc '{{backend_cd}} && composer lint:fix'; \
-    fi
+    @just run-backend 'composer lint:fix'
 
 stan:
-    @if [ "{{_in_container}}" = "1" ]; then \
-      {{backend_cd}} && composer stan; \
-    else \
-      {{compose}} exec -T -u app {{api_svc}} bash -lc '{{backend_cd}} && composer stan'; \
-    fi
+    @just run-backend 'composer stan'
 
 rector:
-    @if [ "{{_in_container}}" = "1" ]; then \
-      {{backend_cd}} && composer rector; \
-    else \
-      {{compose}} exec -T -u app {{api_svc}} bash -lc '{{backend_cd}} && composer rector'; \
-    fi
+    @just run-backend 'composer rector'
 
 migrate:
-    @if [ "{{_in_container}}" = "1" ]; then \
-      {{backend_cd}} && php artisan migrate --force; \
-    else \
-      {{compose}} exec -T -u app {{api_svc}} bash -lc '{{backend_cd}} && php artisan migrate --force'; \
-    fi
+    @just run-backend 'php artisan migrate --force'
 
 artisan +ARGS:
-    @if [ "{{_in_container}}" = "1" ]; then \
-      {{backend_cd}} && php artisan {{ARGS}}; \
-    else \
-      {{compose}} exec -T -u app {{api_svc}} bash -lc '{{backend_cd}} && php artisan {{ARGS}}'; \
-    fi
+    @just run-backend 'php artisan {{ARGS}}'
 
 # ----------------------------------------------------------------------------
-# Frontend (pnpm/Vite) — always via the `frontend` service
-# Requires: apps/frontend/.npmrc with `store-dir=/pnpm-store` and a volume mount
+# Frontend (pnpm/Vite) — always via the frontend service
 # ----------------------------------------------------------------------------
-
-# Install deps in a clean, deterministic way (CI-like)
 fe-install:
     @{{ensure_host}}
     {{compose}} pull {{fe_svc}} >/dev/null || true
@@ -140,7 +147,6 @@ fe-install:
       pnpm install --frozen-lockfile --reporter=silent --no-color \
     '
 
-# Fast local install (keeps node_modules)
 fe-install-fast:
     @{{ensure_host}}
     {{compose}} pull {{fe_svc}} >/dev/null || true
@@ -150,24 +156,20 @@ fe-install-fast:
       pnpm install --frozen-lockfile --reporter=silent --no-color \
     '
 
-# Long-running dev server
 fe-dev:
     @{{ensure_host}}
     {{compose}} up -d --force-recreate --no-deps {{fe_svc}}
     {{compose}} logs -f --since=10s {{fe_svc}}
 
-# Stop only the FE service
 fe-down:
     @{{ensure_host}}
     {{compose}} stop {{fe_svc}}
 
-# Interactive shell with pnpm prepped
 fe-shell:
     @{{ensure_host}}
     {{compose}} run --rm -it --no-deps -w {{fe_dir}} {{fe_svc}} sh -lc '\
       corepack enable && corepack prepare pnpm@10.15.1 --activate && exec sh'
 
-# Prove cache & offline install
 fe-proof-cache:
     @{{ensure_host}}
     {{compose}} run -T --rm --no-deps -w {{fe_dir}} -e CI=1 {{fe_svc}} sh -lc '\
@@ -179,8 +181,6 @@ fe-proof-cache:
       pnpm install --frozen-lockfile --offline --reporter=silent --no-color; \
       echo OFFLINE_OK \
     '
-
-# ---------- pnpm store maintenance -------------------------------------------
 
 fe-store-stat:
     @{{ensure_host}}
@@ -199,7 +199,7 @@ fe-store-clear:
     {{compose}} run -T --rm --no-deps {{fe_svc}} sh -lc 'rm -rf /pnpm-store/* && echo "pnpm store cleared"'
 
 # ----------------------------------------------------------------------------
-# CI simulators (mirror .github/workflows/ci.yml)
+# CI simulators
 # ----------------------------------------------------------------------------
 ci:
     just ci-backend-sqlite
@@ -233,7 +233,7 @@ ci-backend-sqlite:
 
 ci-backend-mysql:
     @{{ensure_host}}
-    {{compose}} up -d db >/dev/null
+    {{compose}} up -d {{db_svc}} >/dev/null
     {{compose}} exec -T -u app {{api_svc}} bash -lc ' \
       {{backend_cd}}; \
       composer install --no-interaction --no-progress --prefer-dist; \
@@ -260,19 +260,171 @@ ci-frontend:
       echo "[build]"; pnpm build \
     '
 
-# Debug toggles (host only) ----------------------------------------------------
-xdebug-on:
-    @if [ "{{_in_container}}" = "1" ]; then \
-      echo "Run this from the host"; exit 1; \
-    else \
-      XDEBUG_MODE=debug,develop {{compose}} up -d --force-recreate {{api_svc}}; \
-      {{compose}} logs -f --since=10s {{api_svc}} | sed -n '1,80p'; \
-    fi
+# ----------------------------------------------------------------------------
+# Tiered bring-up and minimal smokes
+# ----------------------------------------------------------------------------
+tier0-up:
+    @{{ensure_host}}
+    {{compose}} up -d {{web_svc}} {{api_svc}} {{db_svc}} {{cache_svc}} {{mail_svc}}
+    {{compose}} ps
 
-xdebug-off:
-    @if [ "{{_in_container}}" = "1" ]; then \
-      echo "Run this from the host"; exit 1; \
-    else \
-      XDEBUG_MODE=off {{compose}} up -d --force-recreate {{api_svc}}; \
-      {{compose}} logs -f --since=10s {{api_svc}} | sed -n '1,80p'; \
-    fi
+tier0-smoke:
+    @{{ensure_host}}
+    set -e
+    echo "[web]";   curl -i "http://localhost:${WEB_PORT:-8080}/" | head -n 1
+    echo "[redis]"; {{compose}} exec -T {{cache_svc}} redis-cli PING
+    echo "[mail]";  curl -s -o /dev/null -w "%{http_code}\n" http://localhost:8025/
+
+tier0-down:
+    @{{ensure_host}}
+    {{compose}} stop {{web_svc}} {{api_svc}} {{db_svc}} {{cache_svc}} {{mail_svc}}
+
+ui-up:
+    @{{ensure_host}}
+    {{compose}} up -d {{fe_svc}}
+    {{compose}} ps {{fe_svc}}
+
+ui-smoke:
+    @{{ensure_host}}
+    curl -i http://localhost:5173/ | head -n 1
+
+ui-down:
+    @{{ensure_host}}
+    {{compose}} stop {{fe_svc}}
+
+delivery-up:
+    @{{ensure_host}}
+    {{compose}} up -d {{horizon_svc}}
+    {{compose}} ps {{horizon_svc}}
+
+delivery-smoke:
+    @{{ensure_host}}
+    {{compose}} exec -T {{horizon_svc}} sh -lc 'echo ok'
+    curl -sI "http://localhost:${WEB_PORT:-8080}/horizon" | head -n 1 || true
+
+delivery-down:
+    @{{ensure_host}}
+    {{compose}} stop {{horizon_svc}}
+
+monitoring-up:
+    @{{ensure_host}}
+    {{compose}} --profile monitoring up -d {{prom_svc}} {{graf_svc}}
+    {{compose}} ps {{prom_svc}} {{graf_svc}}
+
+monitoring-smoke:
+    @{{ensure_host}}
+    set -e
+    echo "[prometheus]"; curl -sf http://localhost:9090/-/healthy && echo "OK"
+    echo "[grafana]";    curl -sI http://localhost:3000/login | head -n 1
+
+monitoring-down:
+    @{{ensure_host}}
+    {{compose}} stop {{prom_svc}} {{graf_svc}}
+
+logging-up:
+    @{{ensure_host}}
+    {{compose}} --profile logging up -d {{loki_svc}}
+    {{compose}} ps {{loki_svc}}
+
+logging-smoke:
+    @{{ensure_host}}
+    curl -i http://localhost:3100/ready | head -n 1
+
+logging-down:
+    @{{ensure_host}}
+    {{compose}} stop {{loki_svc}}
+
+tracing-up:
+    @{{ensure_host}}
+    {{compose}} --profile tracing up -d {{otel_svc}}
+    {{compose}} ps {{otel_svc}}
+
+tracing-smoke:
+    @{{ensure_host}}
+    set -e
+    echo "[health]"; curl -sI http://localhost:13133/ | head -n 1
+    echo "[otlp]  "; curl -sI http://localhost:4318/  | head -n 1
+
+tracing-down:
+    @{{ensure_host}}
+    {{compose}} stop {{otel_svc}}
+
+mock-up:
+    @{{ensure_host}}
+    {{compose}} --profile mock up -d {{prism_svc}}
+    {{compose}} ps {{prism_svc}}
+
+mock-smoke:
+    @{{ensure_host}}
+    curl -i http://localhost:4010/health | head -n 1
+
+mock-down:
+    @{{ensure_host}}
+    {{compose}} stop {{prism_svc}}
+
+ssl-up:
+    @{{ensure_host}}
+    {{compose}} --profile ssl up -d {{caddy_svc}}
+    {{compose}} ps {{caddy_svc}}
+
+ssl-smoke:
+    @{{ensure_host}}
+    curl -I https://{{DOMAIN}} --resolve {{DOMAIN}}:443:127.0.0.1 -k | head -n 1
+
+ssl-down:
+    @{{ensure_host}}
+    {{compose}} stop {{caddy_svc}}
+
+# Tier 3 scale placeholders
+scale-up:
+    @{{ensure_host}}
+    echo "TODO: bring up octane, proxysql, k6 once configured"
+
+scale-smoke:
+    @{{ensure_host}}
+    echo "TODO: add octane check, mysql proxy ping, k6 dry-run"
+
+scale-down:
+    @{{ensure_host}}
+    echo "TODO: stop octane, proxysql, k6"
+
+# Bundles
+tiers-up:
+    @{{ensure_host}}
+    just tier0-up
+    just ui-up
+    just delivery-up
+    just monitoring-up
+    just logging-up
+    just tracing-up
+    just mock-up
+    just ssl-up
+
+tiers-smoke:
+    @{{ensure_host}}
+    just tier0-smoke
+    just ui-smoke
+    just delivery-smoke
+    just monitoring-smoke
+    just logging-smoke
+    just tracing-smoke
+    just mock-smoke
+    just ssl-smoke
+
+tiers-down:
+    @{{ensure_host}}
+    just ssl-down
+    just mock-down
+    just tracing-down
+    just logging-down
+    just monitoring-down
+    just delivery-down
+    just ui-down
+    just down
+
+# Fully nuke everything for this project
+nuke-all:
+    @{{ensure_host}}
+    {{compose}} -p {{PROJECT_SLUG}} down -v --remove-orphans || true
+    docker rm -f $$(docker ps -aq -f name={{PROJECT_SLUG}}_) 2>/dev/null || true
+    docker network rm {{PROJECT_SLUG}}_default 2>/dev/null || true

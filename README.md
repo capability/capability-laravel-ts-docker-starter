@@ -26,15 +26,15 @@ cp .env.example .env
 # 2) Enable SSL profile by default
 # .env should include:
 # COMPOSE_PROFILES=ssl
-# DOMAIN=app-skeleton.test
+# DOMAIN=${DOMAIN}
 
 # 3) Dev SSL with mkcert
 brew install mkcert nss
 mkcert -install
 mkdir -p infra/caddy/certs
-mkcert -cert-file infra/caddy/certs/app-skeleton.test.pem \
-       -key-file  infra/caddy/certs/app-skeleton.test-key.pem app-skeleton.test
-echo "127.0.0.1 app-skeleton.test" | sudo tee -a /etc/hosts
+mkcert -cert-file infra/caddy/certs/${DOMAIN}.pem \
+       -key-file  infra/caddy/certs/${DOMAIN}-key.pem ${DOMAIN}
+echo "127.0.0.1 ${DOMAIN}" | sudo tee -a /etc/hosts
 
 # 4) Up
 docker compose up -d
@@ -42,7 +42,7 @@ docker compose up -d
 
 URLs
 
-* HTTPS via Caddy: [https://app-skeleton.test](https://app-skeleton.test)
+* HTTPS via Caddy: [https://${DOMAIN}](https://${DOMAIN}.test)
 * HTTP direct to nginx: [http://localhost:\${WEB\_PORT:-8080}](http://localhost:${WEB_PORT:-8080})
 
 Profiles

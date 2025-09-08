@@ -9,7 +9,7 @@ This starter is provided as-is, without guaranteed support. Community contributi
 If you discover a vulnerability in this project:
 
 1. **Do not open a public issue.**
-2. Email the maintainers directly at: **security@app-skeleton.example**
+2. Email the maintainers directly at: **security@${PROJECT_SLUG}.example**
 3. Include:
    - A description of the vulnerability
    - Steps to reproduce

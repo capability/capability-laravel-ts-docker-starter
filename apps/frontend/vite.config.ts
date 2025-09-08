@@ -23,7 +23,7 @@ export default defineConfig(({ mode }) => {
       host: '0.0.0.0',
       // Required for HMR over TLS when proxied through Caddy
       hmr: {
-        host: process.env.FRONTEND_HOST || 'ui.app-skeleton.test',
+        host: process.env.FRONTEND_HOST || 'ui.${process.env.PROJECT_SLUG}.test',
         protocol: 'wss',
         clientPort: 443,
       },

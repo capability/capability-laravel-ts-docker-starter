@@ -17,14 +17,14 @@ Caddy can terminate TLS for both **development** (self-signed via mkcert) and **
 
    ```bash
    mkdir -p infra/caddy/certs
-   mkcert -cert-file infra/caddy/certs/app-skeleton.test.pem \
-          -key-file  infra/caddy/certs/app-skeleton.test-key.pem app-skeleton.test
+   mkcert -cert-file infra/caddy/certs/${DOMAIN}.pem \
+          -key-file  infra/caddy/certs/${DOMAIN}-key.pem ${DOMAIN}
    ```
 
 3. **Update hosts file**
 
    ```bash
-   echo "127.0.0.1 app-skeleton.test" | sudo tee -a /etc/hosts
+   echo "127.0.0.1 ${DOMAIN}" | sudo tee -a /etc/hosts
    ```
 
 4. **Set environment**
@@ -32,20 +32,20 @@ Caddy can terminate TLS for both **development** (self-signed via mkcert) and **
 
    ```dotenv
    COMPOSE_PROFILES=ssl
-   DOMAIN=app-skeleton.test
+   DOMAIN=${DOMAIN}
    ```
 
    Backend `.env`:
 
    ```dotenv
-   APP_URL=https://app-skeleton.test
+   APP_URL=https://${DOMAIN}
    ```
 
 5. **Bring up stack**
 
    ```bash
    docker compose up -d
-   curl -i https://app-skeleton.test/api/healthz
+   curl -i https://${DOMAIN}/api/healthz
    ```
 
 You should see a `200 OK` and a JSON body.

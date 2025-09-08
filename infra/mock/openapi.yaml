@@ -1,5 +1,12 @@
 openapi: 3.0.3
-info:
-  title: app-skeleton mock
-  version: 0.1.0
-paths: {}
+info: { title: Mock API, version: 0.0.1 }
+paths:
+  /health:
+    get:
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { type: object, properties: { ok: { type: boolean } }, required: [ok] }
+              examples: { default: { value: { ok: true } } }

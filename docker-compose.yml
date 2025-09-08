@@ -1,4 +1,4 @@
-name: ${COMPOSE_PROJECT_NAME:-app-skeleton}
+name: ${COMPOSE_PROJECT_NAME}
 
 services:
   api:
@@ -6,7 +6,7 @@ services:
       context: ./apps/backend
       dockerfile: Dockerfile
       target: base
-    container_name: ${COMPOSE_PROJECT_NAME:-app-skeleton}_api
+    container_name: ${COMPOSE_PROJECT_NAME}_api
     environment:
       APP_ENV: local
       APP_DEBUG: "true"
@@ -37,7 +37,7 @@ services:
 
   web:
     image: nginx:alpine
-    container_name: ${COMPOSE_PROJECT_NAME:-app-skeleton}_web
+    container_name: ${COMPOSE_PROJECT_NAME}_web
     volumes:
       - ./apps/backend:/var/www/html:ro
       - ./apps/backend/docker/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
@@ -56,6 +56,7 @@ services:
 
   caddy:
     image: caddy:2
+    container_name: ${COMPOSE_PROJECT_NAME}_caddy
     restart: unless-stopped
     depends_on:
       web:
@@ -64,7 +65,7 @@ services:
       - "80:80"
       - "443:443"
     environment:
-      - DOMAIN=${DOMAIN:-app-skeleton.test}
+      - DOMAIN=${DOMAIN}
     volumes:
       - caddy_data:/data
       - caddy_config:/config
@@ -74,7 +75,7 @@ services:
 
   db:
     image: mysql:8.4
-    container_name: ${COMPOSE_PROJECT_NAME:-app-skeleton}_db
+    container_name: ${COMPOSE_PROJECT_NAME}_db
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root}
       MYSQL_DATABASE: ${MYSQL_DATABASE:-app_db}
@@ -93,7 +94,7 @@ services:
 
   cache:
     image: redis:7-alpine
-    container_name: ${COMPOSE_PROJECT_NAME:-app-skeleton}_cache
+    container_name: ${COMPOSE_PROJECT_NAME}_cache
     ports:
       - "${REDIS_PORT:-6380}:6379"
     healthcheck:
@@ -106,7 +107,7 @@ services:
 
   mail:
     image: axllent/mailpit:latest
-    container_name: ${COMPOSE_PROJECT_NAME:-app-skeleton}_mail
+    container_name: ${COMPOSE_PROJECT_NAME}_mail
     ports:
       - "8025:8025"
       - "1025:1025"
@@ -114,6 +115,7 @@ services:
 
   frontend:
     image: node:22-alpine
+    container_name: ${COMPOSE_PROJECT_NAME}_ui
     working_dir: /usr/src/app
     command: >
       sh -lc '
@@ -134,7 +136,7 @@ services:
       context: ./apps/backend
       dockerfile: Dockerfile
       target: development      # or base in CI/prod-like
-    container_name: ${COMPOSE_PROJECT_NAME:-app-skeleton}_horizon
+    container_name: ${COMPOSE_PROJECT_NAME}_horizon
     working_dir: /var/www/html
     command: sh -lc "php artisan horizon"
     depends_on:
@@ -152,7 +154,7 @@ services:
 
   prometheus:
     image: prom/prometheus:latest
-    container_name: ${COMPOSE_PROJECT_NAME:-app-skeleton}_prometheus
+    container_name: ${COMPOSE_PROJECT_NAME}_prometheus
     ports:
       - "9090:9090"
     volumes:
@@ -161,7 +163,7 @@ services:
 
   grafana:
     image: grafana/grafana:latest
-    container_name: ${COMPOSE_PROJECT_NAME:-app-skeleton}_grafana
+    container_name: ${COMPOSE_PROJECT_NAME}_grafana
     ports:
       - "3000:3000"
     volumes:
@@ -170,15 +172,17 @@ services:
 
   loki:
     image: grafana/loki:2.9.8
-    container_name: ${COMPOSE_PROJECT_NAME:-app-skeleton}_loki
+    container_name: ${COMPOSE_PROJECT_NAME}_loki
+    command: ["-config.file=/etc/loki/config.yaml"]
+    volumes:
+      - ./infra/logging/loki/config.yaml:/etc/loki/config.yaml:ro
     ports:
       - "3100:3100"
-    command: -config.file=/etc/loki/local-config.yaml
     profiles: ["logging"]
 
   otel-collector:
     image: otel/opentelemetry-collector:latest
-    container_name: ${COMPOSE_PROJECT_NAME:-app-skeleton}_otel
+    container_name: ${COMPOSE_PROJECT_NAME}_otel
     command: ["--config=/etc/otelcol/config.yaml"]
     volumes:
       - ./infra/tracing/otel/config.yaml:/etc/otelcol/config.yaml:ro
@@ -190,7 +194,7 @@ services:
 
   prism:
     image: stoplight/prism:4
-    container_name: ${COMPOSE_PROJECT_NAME:-app-skeleton}_prism
+    container_name: ${COMPOSE_PROJECT_NAME}_prism
     command: ["mock","-h","0.0.0.0","/openapi/openapi.yaml"]
     volumes:
       - ./infra/mock/openapi.yaml:/openapi/openapi.yaml:ro

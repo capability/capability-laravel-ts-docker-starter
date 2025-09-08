@@ -1,7 +1,7 @@
 global:
   scrape_interval: 15s
-scrape_configs:
-  - job_name: 'web'
-    static_configs:
-      - targets: ['web:80']
 
+scrape_configs:
+  - job_name: prometheus
+    static_configs:
+      - targets: ['localhost:9090']

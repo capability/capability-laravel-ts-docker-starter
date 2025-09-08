@@ -1,0 +1,10 @@
+{
+  "name": "capability-backend",
+  "dockerComposeFile": ["../../docker-compose.yml"],
+  "service": "api",
+  "mountWorkspaceGitRoot": true,
+  "workspaceFolder": "/workspaces/${localWorkspaceFolderBasename}",
+  "workspaceMount": "source=${localWorkspaceFolder},target=/workspaces/${localWorkspaceFolderBasename},type=bind,consistency=cached",
+  "postCreateCommand": "composer install"
+}
+

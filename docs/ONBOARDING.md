@@ -44,21 +44,21 @@ Edit `.env` and set:
 
 ```
 COMPOSE_PROFILES=ssl,ui
-DOMAIN=app-skeleton.test
+DOMAIN=${DOMAIN}
 ```
 
 Add to `/etc/hosts`:
 
 ```
-127.0.0.1 app-skeleton.test
+127.0.0.1 ${DOMAIN}
 ```
 
 Generate dev certs:
 
 ```bash
 mkdir -p infra/caddy/certs
-mkcert -cert-file infra/caddy/certs/app-skeleton.test.pem \
-       -key-file infra/caddy/certs/app-skeleton.test-key.pem app-skeleton.test
+mkcert -cert-file infra/caddy/certs/${DOMAIN}.pem \
+       -key-file infra/caddy/certs/${DOMAIN}-key.pem ${DOMAIN}
 ```
 
 ---
@@ -82,7 +82,7 @@ This starts:
 Check:
 
 ```bash
-curl -i https://app-skeleton.test/api/healthz
+curl -i https://${DOMAIN}/api/healthz
 ```
 
 ---

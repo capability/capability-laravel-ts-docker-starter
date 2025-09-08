@@ -3,7 +3,7 @@ FROM php:8.3-fpm-bookworm AS base
 RUN set -eux; \
   apt-get update; \
   apt-get install -y --no-install-recommends \
-    git unzip zip \
+    bash curl git unzip zip \
     libicu-dev libzip-dev \
     libpng-dev libjpeg-dev libwebp-dev libfreetype6-dev \
     gosu \

@@ -32,7 +32,7 @@ Project maintainers are responsible for clarifying and enforcing our standards o
 
 Instances of abusive, harassing, or otherwise unacceptable behavior may be reported to the project team at:
 
-**contact: security@app-skeleton.example**
+**contact: security@${PROJECT_SLUG}.example**
 
 All complaints will be reviewed and investigated promptly and fairly.
 
