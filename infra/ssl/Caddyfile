@@ -1,6 +1,6 @@
 # Backend (Laravel via nginx)
 {$DOMAIN} {
-	tls /etc/certs/${DOMAIN}.pem /etc/certs/${DOMAIN}-key.pem
+	tls /etc/certs/{$DOMAIN}.pem /etc/certs/{$DOMAIN}-key.pem
 	reverse_proxy http://web:80
 	header {
 		Strict-Transport-Security "max-age=31536000"
@@ -10,7 +10,7 @@
 
 # Frontend (Vite dev server)
 ui.{$DOMAIN} {
-        tls /etc/certs/${DOMAIN}.pem /etc/certs/${DOMAIN}-key.pem
+        tls /etc/certs/{$DOMAIN}.pem /etc/certs/{$DOMAIN}-key.pem
         reverse_proxy http://frontend:5173
         header {
                 Strict-Transport-Security "max-age=31536000"

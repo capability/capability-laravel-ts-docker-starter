@@ -15,7 +15,7 @@
     "source=composer-cache,target=/home/app-user/.composer/cache,type=volume"
   ],
 
-  "runServices": ["api", "web", "db", "cache", "mail", "frontend"],
+  "runServices": ["api", "web", "db", "cache", "mail", "frontend", "caddy"],
 
   "remoteUser": "app-user",
   "overrideCommand": false,
