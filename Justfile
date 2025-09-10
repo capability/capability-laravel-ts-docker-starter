@@ -3,8 +3,9 @@
 # ============================================================================
 set shell := ["bash", "-euo", "pipefail", "-c"]
 
-PROJECT_SLUG := env_var("PROJECT_SLUG", "app-skeleton")
-DOMAIN := env_var("DOMAIN", "app-skeleton.test")
+set dotenv-load
+PROJECT_SLUG := env_var("PROJECT_SLUG")
+DOMAIN := env_var("DOMAIN")
 
 # Detect if we are inside a container (devcontainer or service)
 _in_container := `test -f /.dockerenv && echo 1 || echo 0`
@@ -33,10 +34,20 @@ fe_dir := "/usr/src/app"
 
 # Guard: some recipes must run on the host
 ensure_host := '''
-if [ "{{_in_container}}" = "1" ]; then
-  echo "Run this from the host (not inside the container/devcontainer)."; exit 1;
+if ! command -v docker >/dev/null 2>&1; then
+  if [ -f /.dockerenv ] || [ -d /workspaces ]; then
+    echo "You're inside a dev/service container. Run this on the host.";
+  else
+    echo "Docker CLI not found on PATH.";
+  fi
+  exit 1
 fi
 '''
+
+default:
+    @echo "Common recipes:"
+    @echo "  up, down, nuke, tiers-up, tiers-down, fe-install, install, test"
+    @echo "Use: just <recipe>"
 
 # ----------------------------------------------------------------------------
 # Quick starts at the very top
@@ -428,3 +439,22 @@ nuke-all:
     {{compose}} -p {{PROJECT_SLUG}} down -v --remove-orphans || true
     docker rm -f $$(docker ps -aq -f name={{PROJECT_SLUG}}_) 2>/dev/null || true
     docker network rm {{PROJECT_SLUG}}_default 2>/dev/null || true
+
+# Open backend VS Code window
+vs-code-be:
+    if command -v devcontainer >/dev/null 2>&1; then \
+      devcontainer up --workspace-folder apps/backend >/dev/null || true; \
+    fi
+    code -n apps/backend
+
+# Open frontend VS Code window
+vs-code-fe:
+    if command -v devcontainer >/dev/null 2>&1; then \
+      devcontainer up --workspace-folder apps/frontend >/dev/null || true; \
+    fi
+    code -n apps/frontend
+
+# Open both
+open-both:
+    just vs-code-be
+    just vs-code-fe

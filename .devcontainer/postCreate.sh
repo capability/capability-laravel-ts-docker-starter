@@ -1,19 +1,11 @@
-#!/usr/bin/env bash
-set -euo pipefail
+#!/bin/sh
+set -eu
 
-# Start in the workspace root (repo root)
-cd "${containerWorkspaceFolder:-/workspaces/${localWorkspaceFolderBasename:-workspace}}"
+cd /workspaces/app
 
-# Backend (Laravel)
+# Backend deps
 if [ -f apps/backend/composer.json ]; then
-  ( cd apps/backend && composer install )
-  # optional: php artisan key:generate --force
+  ( cd apps/backend && composer install --no-interaction )
 fi
 
-# Frontend (pnpm)
-corepack enable
-corepack prepare pnpm@10.15.1 --activate
-if [ -f apps/frontend/pnpm-lock.yaml ]; then
-  ( cd apps/frontend && pnpm install --frozen-lockfile )
-fi
-
+echo "Post-create OK. Frontend deps start in the 'frontend' service."

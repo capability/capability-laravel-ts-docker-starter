@@ -1,10 +1,38 @@
 {
-  "name": "capability-backend",
-  "dockerComposeFile": ["../../docker-compose.yml"],
+  "name": "backend (api)",
+  "dockerComposeFile": ["../../docker-compose.yml", "./compose.init.yml"],
   "service": "api",
-  "mountWorkspaceGitRoot": true,
-  "workspaceFolder": "/workspaces/${localWorkspaceFolderBasename}",
-  "workspaceMount": "source=${localWorkspaceFolder},target=/workspaces/${localWorkspaceFolderBasename},type=bind,consistency=cached",
-  "postCreateCommand": "composer install"
-}
+  "workspaceFolder": "/var/www/html",
+  "runServices": ["api", "web", "db", "cache", "mail"],
+  "overrideCommand": false,
 
+  "remoteUser": "app-user",
+
+  "mounts": [
+    "source=vscode-server-api,target=/home/app-user/.vscode-server,type=volume",
+    "source=composer-cache,target=/home/app-user/.composer/cache,type=volume"
+  ],
+
+  "customizations": {
+    "vscode": {
+      "settings": {
+        "workbench.colorTheme": "Default Dark Modern",
+        "php.validate.executablePath": "/usr/local/bin/php",
+        "intelephense.environment.includePaths": ["/var/www/html/vendor"],
+        "files.watcherExclude": {
+          "**/vendor/**": true,
+          "**/storage/**": true,
+          "**/node_modules/**": true
+        }
+      },
+      "extensions": [
+        "bmewburn.vscode-intelephense-client",
+        "xdebug.php-pack",
+        "onecentlin.laravel-blade",
+        "ryannaddy.laravel-artisan",
+        "editorconfig.editorconfig",
+        "esbenp.prettier-vscode"
+      ]
+    }
+  }
+}

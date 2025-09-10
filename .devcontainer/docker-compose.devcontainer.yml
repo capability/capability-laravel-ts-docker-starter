@@ -1,7 +1,4 @@
 services:
   api:
-    # Make the entire monorepo visible for VS Code (workspaceFolder=/workspace)
     volumes:
-      - ..:/workspace:cached
-    # Do not map ports here. Nginx "web" service already publishes HTTP from the base compose.
-    # Leave depends_on as defined in the base compose (web depends on api).
+      - ..:/workspaces/app:cached

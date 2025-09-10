@@ -1,0 +1,15 @@
+{
+  "folders": [
+    { "name": "backend",  "path": "/var/www/html" },
+    { "name": "frontend", "path": "/workspaces/${localWorkspaceFolderBasename}/apps/frontend" }
+  ],
+  "settings": {
+    "intelephense.environment.includePaths": ["/var/www/html/vendor"],
+    "typescript.tsdk": "apps/frontend/node_modules/typescript/lib",
+    "eslint.workingDirectories": ["apps/frontend"],
+    "eslint.packageManager": "pnpm",
+    "vitest.projectRoot": "apps/frontend",
+    "vitest.commandLine": "pnpm vitest"
+  }
+}
+

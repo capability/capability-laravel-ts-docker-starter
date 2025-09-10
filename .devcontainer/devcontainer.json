@@ -1,64 +1,103 @@
 {
-  "name": "${localWorkspaceFolderBasename} (backend+frontend)",
-  "dockerComposeFile": [
-    "../docker-compose.yml",
-    "../docker-compose.dev.yml",
-    "./docker-compose.devcontainer.yml"
-  ],
+  "name": "stack (api + frontend)",
+  "dockerComposeFile": ["../docker-compose.yml"],
   "service": "api",
 
-  "mountWorkspaceGitRoot": false,
-  "workspaceMount": "source=${localWorkspaceFolder},target=/workspaces/${localWorkspaceFolderBasename},type=bind,consistency=cached",
-  "workspaceFolder": "/workspaces/${localWorkspaceFolderBasename}"
+  // Start where the backend actually exists in the api container
+  "workspaceFolder": "/var/www/html",
+
+  // ALSO bind the repo root so you can edit frontend + infra at /workspaces/<repo>
+  "mounts": [
+    "source=${localWorkspaceFolder},target=/workspaces/${localWorkspaceFolderBasename},type=bind,consistency=cached",
+
+    // Persist VS Code server + language server caches (biggest win for re-indexing)
+    "source=vscode-server,target=/home/app-user/.vscode-server,type=volume",
+    "source=composer-cache,target=/home/app-user/.composer/cache,type=volume"
+  ],
+
+  "runServices": ["api", "web", "db", "cache", "mail", "frontend"],
+
+  "remoteUser": "app-user",
+  "overrideCommand": false,
+  "remoteEnv": {
+    "VSCODE_AGENT_FOLDER": "/home/app-user/.vscode-server"
+  },
 
   "features": {
+    // Small Node runtime so ESLint/Vitest/TS extensions can run in this window
     "ghcr.io/devcontainers/features/node:1": {
       "version": "22",
-      "installYarn": false
-    },
-    "ghcr.io/devcontainers/features/docker-outside-of-docker:1": {}
-  },
-  "mounts": [
-    "source=/var/run/docker.sock,target=/var/run/docker.sock,type=bind"
-  ],
-  "customizations": {
-    "vscode": {
-      "settings": {
-        "editor.formatOnSave": true,
-        "php.validate.executablePath": "/usr/local/bin/php",
-        "intelephense.files.exclude": [
-          "**/vendor/**",
-          "**/node_modules/**",
-          "**/.git/**"
-        ],
-        "intelephense.files.maxMemory": 4096,
-        "eslint.experimental.useFlatConfig": true,
-        "typescript.tsdk": "apps/frontend/node_modules/typescript/lib",
-        "files.trimTrailingWhitespace": true,
-        "files.insertFinalNewline": true,
-        "terminal.integrated.fontFamily": "MesloLGS NF"
-      },
-      "extensions": [
-        "bmewburn.vscode-intelephense-client",
-        "xdebug.php-pack",
-        "onecentlin.laravel-blade",
-        "ryannaddy.laravel-artisan",
-        "ms-azuretools.vscode-docker",
-        "dbaeumer.vscode-eslint",
-        "esbenp.prettier-vscode",
-        "vitest.explorer"
-      ]
+      "nodeGypDependencies": false
     }
   },
 
   "containerEnv": {
-    "COMPOSER_ALLOW_SUPERUSER": "1"
+    // Tell VS Code where to keep its server (on the mounted volume)
+    "VSCODE_AGENT_FOLDER": "/home/app-user/.vscode-server",
+    "XDEBUG_MODE": "${localEnv:XDEBUG_MODE:off}"
   },
 
-  "forwardPorts": [5173, 8080, 8025],
+  "forwardPorts": [8080, 3307, 6380, 8025, 1025, 5173],
+  "otherPortsAttributes": { "onAutoForward": "notify" },
+  "shutdownAction": "stopCompose",
 
-  "postCreateCommand": "bash .devcontainer/postCreate.sh",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        // PHP
+        "bmewburn.vscode-intelephense-client",
+        "xdebug.php-pack",
+        "onecentlin.laravel-blade",
+        "amiralizadeh9480.laravel-extra-intellisense",
+        "ryannaddy.laravel-artisan",
+        "editorconfig.editorconfig",
+        "esbenp.prettier-vscode",
+        // Frontend
+        "dbaeumer.vscode-eslint",
+        "vitest.explorer",
+        "yoavbls.pretty-ts-errors"
+      ],
+      "settings": {
+        // PHP: index vendor inside the container
+        "intelephense.environment.phpVersion": "8.3",
+        "intelephense.environment.includePaths": ["/var/www/html/vendor"],
+        "php.validate.executablePath": "/usr/local/bin/php",
 
-  "remoteUser": "app",
-  "runArgs": ["--init"]
+        // Scope JS tooling to the frontend
+        "typescript.tsdk": "apps/frontend/node_modules/typescript/lib",
+        "eslint.workingDirectories": [
+          { "directory": "apps/frontend", "changeProcessCWD": true }
+        ],
+        "vitest.projectRoot": "apps/frontend",
+        "vitest.commandLine": "pnpm vitest",
+
+        // Reduce watcher churn
+        "files.exclude": { "**/.git": true, "**/.DS_Store": true },
+        "files.watcherExclude": {
+          "**/node_modules/**": true,
+          "**/vendor/**": true,
+          "**/storage/**": true
+        },
+        "search.exclude": {
+          "**/node_modules": true,
+          "**/vendor": true,
+          "**/storage": true
+        },
+        "editor.formatOnSave": true
+      }
+    }
+  },
+
+  // One shell; idempotent APP_KEY (no rotation) and DB-guarded migrate
+  "postCreateCommand": "sh -lc 'set -eux; \
+    if command -v corepack >/dev/null 2>&1; then corepack enable; corepack prepare pnpm@10.15.1 --activate || true; fi; \
+    mkdir -p /home/app-user/.vscode-server /var/www/html/storage /var/www/html/bootstrap/cache; \
+    chown -R app-user:app-user /home/app-user /var/www/html/storage /var/www/html/bootstrap/cache || true; \
+    cd /var/www/html; \
+    [ -f composer.json ] && composer install --no-interaction --prefer-dist || true; \
+    [ -f .env ] || cp .env.example .env || true; \
+    if ! grep -qE \"^APP_KEY=base64:.+\" .env; then php artisan key:generate --force; fi; \
+    php -r \"exit(@fsockopen(\\\"db\\\",3306)?0:1);\" && php artisan migrate --force || true'",
+
+  "postStartCommand": "mkdir -p /var/www/html/storage /var/www/html/bootstrap/cache && chown -R app-user:app-user /var/www/html/storage /var/www/html/bootstrap/cache || true"
 }

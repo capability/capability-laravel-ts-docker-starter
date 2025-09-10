@@ -1,0 +1,3 @@
+services:
+  frontend:
+    profiles: []   # enable service if it's profiled in the main compose

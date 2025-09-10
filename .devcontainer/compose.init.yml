@@ -1,0 +1,5 @@
+services:
+  api:
+    init: true
+  frontend:
+    init: true

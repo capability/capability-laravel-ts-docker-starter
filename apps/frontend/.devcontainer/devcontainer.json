@@ -1,0 +1,40 @@
+{
+  "name": "frontend (vite)",
+  "dockerComposeFile": ["../../docker-compose.yml", "./compose.enable.yml", "./compose.init.yml"],
+  "service": "frontend",
+  "workspaceFolder": "/usr/src/app",
+  "runServices": ["frontend"],
+  "overrideCommand": false,
+
+  "remoteUser": "node",
+
+  "mounts": [
+    "source=vscode-server-frontend,target=/home/node/.vscode-server,type=volume",
+    "source=pnpm-store-dev,target=/home/node/.local/share/pnpm/store,type=volume"
+  ],
+
+  "customizations": {
+    "vscode": {
+      "settings": {
+        "workbench.colorTheme": "Default Light Modern",
+        "typescript.tsdk": "node_modules/typescript/lib",
+        "eslint.workingDirectories": [{ "directory": ".", "changeProcessCWD": true }],
+        "eslint.packageManager": "pnpm",
+        "files.watcherExclude": {
+          "**/node_modules/**": true,
+          "**/dist/**": true
+        }
+      },
+      "extensions": [
+        "dbaeumer.vscode-eslint",
+        "vitest.explorer",
+        "yoavbls.pretty-ts-errors",
+        "esbenp.prettier-vscode",
+        "editorconfig.editorconfig"
+      ]
+    }
+  },
+
+  "postCreateCommand": "sh -lc 'set -eux; corepack enable; corepack prepare pnpm@10.15.1 --activate; pnpm install --frozen-lockfile || true'"
+}
+

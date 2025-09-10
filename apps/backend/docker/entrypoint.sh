@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-APP_USER=app
-APP_GROUP=app
+APP_USER=app-user
+APP_GROUP=app-user
 APP_HOME=/home/${APP_USER}
 APP_ROOT=/var/www/html
 
@@ -13,6 +13,7 @@ mkdir -p \
   "${APP_ROOT}/storage/framework/views" \
   "${APP_ROOT}/bootstrap/cache" \
   "${APP_HOME}/.composer" \
+  "${APP_HOME}/.vscode-server" \
   /run/php
 
 chown_if_needed() {
@@ -33,6 +34,9 @@ chown_if_needed "${APP_ROOT}/vendor"
 chown_if_needed "${APP_ROOT}/storage"
 chown_if_needed "${APP_ROOT}/bootstrap/cache"
 chown_if_needed "${APP_HOME}/.composer"
+chown_if_needed "${APP_HOME}/.vscode-server"
+
+chmod -R u+rwX,g+rwX "${APP_HOME}/.vscode-server" || true
 
 # Install composer deps if vendor missing and not production
 if [[ ! -f "${APP_ROOT}/vendor/autoload.php" && "${APP_ENV:-local}" != "production" ]]; then

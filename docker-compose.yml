@@ -26,7 +26,7 @@ services:
       cache:
         condition: service_started
     healthcheck:
-      test: ["CMD-SHELL", "php -r 'exit(@fsockopen(\"127.0.0.1\",9000)?0:1);'"]
+      test: ["CMD-SHELL", 'php -r ''exit(@fsockopen("127.0.0.1",9000)?0:1);''']
       interval: 30s
       timeout: 10s
       retries: 5
@@ -47,7 +47,11 @@ services:
       api:
         condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "(wget -qO- http://127.0.0.1/api/healthz || wget -qO- http://127.0.0.1/api/health) | grep -q '\"ok\":true'"]
+      test:
+        [
+          "CMD-SHELL",
+          '(wget -qO- http://127.0.0.1/api/healthz || wget -qO- http://127.0.0.1/api/health) | grep -q ''"ok":true''',
+        ]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -86,7 +90,11 @@ services:
     volumes:
       - db_data:/var/lib/mysql
     healthcheck:
-      test: ["CMD-SHELL", "mysqladmin ping -u${MYSQL_USER:-app_user} -p${MYSQL_PASSWORD:-app_pass} -h localhost"]
+      test:
+        [
+          "CMD-SHELL",
+          "mysqladmin ping -u${MYSQL_USER:-app_user} -p${MYSQL_PASSWORD:-app_pass} -h localhost",
+        ]
       interval: 20s
       timeout: 5s
       retries: 10
@@ -135,7 +143,7 @@ services:
     build:
       context: ./apps/backend
       dockerfile: Dockerfile
-      target: development      # or base in CI/prod-like
+      target: development # or base in CI/prod-like
     container_name: ${COMPOSE_PROJECT_NAME}_horizon
     working_dir: /var/www/html
     command: sh -lc "php artisan horizon"
@@ -195,7 +203,7 @@ services:
   prism:
     image: stoplight/prism:4
     container_name: ${COMPOSE_PROJECT_NAME}_prism
-    command: ["mock","-h","0.0.0.0","/openapi/openapi.yaml"]
+    command: ["mock", "-h", "0.0.0.0", "/openapi/openapi.yaml"]
     volumes:
       - ./infra/mock/openapi.yaml:/openapi/openapi.yaml:ro
     ports:
