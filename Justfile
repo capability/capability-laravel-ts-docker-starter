@@ -455,6 +455,6 @@ vs-code-fe:
     code -n apps/frontend
 
 # Open both
-open-both:
+vs-code-both:
     just vs-code-be
     just vs-code-fe
